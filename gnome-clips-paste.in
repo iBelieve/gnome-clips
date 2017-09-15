@@ -1,0 +1,15 @@
+#!@PYTHON@
+import evdev
+
+
+def trigger_paste():
+    with evdev.UInput() as ui:
+        ui.write(evdev.ecodes.EV_KEY, evdev.ecodes.KEY_LEFTCTRL, 1)
+        ui.write(evdev.ecodes.EV_KEY, evdev.ecodes.KEY_V, 1)
+        ui.write(evdev.ecodes.EV_KEY, evdev.ecodes.KEY_V, 0)
+        ui.write(evdev.ecodes.EV_KEY, evdev.ecodes.KEY_LEFTCTRL, 0)
+        ui.syn()
+
+
+if __name__ == '__main__':
+    trigger_paste()

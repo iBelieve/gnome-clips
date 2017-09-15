@@ -1,0 +1,45 @@
+#!@PYTHON@
+
+import gi
+import os
+import signal
+import sys
+
+# Gdk.set_allowed_backends won't work, because PyGObject already inits Gdk
+# So we manually force the backend to x11 here. Necessary to get the clipboard to work
+os.environ['GDK_BACKEND'] = 'x11'
+
+from gi.repository import Gio
+from gnomeclips.application import Application
+
+
+
+pkgdatadir = '@DATA_DIR@'
+
+# Copied from Lollypop music player
+def install_excepthook():
+    """ Make sure we exit when an unhandled exception occurs. """
+    from gi.repository import Gtk
+    old_hook = sys.excepthook
+
+    def new_hook(etype, evalue, etb):
+        old_hook(etype, evalue, etb)
+        while Gtk.main_level():
+            Gtk.main_quit()
+        sys.exit()
+    sys.excepthook = new_hook
+
+
+if __name__ == '__main__':
+    install_excepthook()
+
+    # resource = Gio.resource_load(os.path.join(pkgdatadir, 'gnome-clips.gresource'))
+    # Gio.Resource._register(resource)
+
+    app = Application('@VERSION@', '@LIB_DIR@')
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+    app.hold()
+
+    status = app.run(sys.argv)
+    sys.exit(status)
