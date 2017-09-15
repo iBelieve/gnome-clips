@@ -35,8 +35,8 @@ currently selected widget.
 
     mkdir build; cd build
     meson ..
-    make
-    [sudo] make install
+    ninja
+    [sudo] ninja install
     
 Make sure the `uinput` module is loaded and `/dev/uinput` is readable/writable by your user (used to trigger 
 the paste action).
