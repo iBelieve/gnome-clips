@@ -1,0 +1,4 @@
+[Desktop Entry]
+Type=Application
+Exec=gapplication action org.gnome.Clips start-daemon
+NoDisplay=True

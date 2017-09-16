@@ -1,109 +1,81 @@
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk
+
 from .history import ClipboardHistory
+from .historylist import HistoryList
 
 
-class Window(Gtk.Window):
-    list_items = []
-    filter = ''
-
-    def __init__(self, clipboard_history: ClipboardHistory):
-        super().__init__(title='Clips', resizable=False,
-                         skip_pager_hint=True, skip_taskbar_hint=True)
-        self.clipboard = clipboard_history.clipboard
+class Window(Gtk.ApplicationWindow):
+    def __init__(self, application, clipboard_history: ClipboardHistory):
+        super().__init__(application=application, title="Clips")
+        self.application = application
         self.clipboard_history = clipboard_history
-        self.clipboard_history.connect('changed', lambda history: self.update_ui())
 
         self.setup_ui()
-        self.set_keep_above(True)
-        self.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
-        self.set_size_request(500, 600)
 
     # UI Setup
 
     def setup_ui(self):
+        self.paned = Gtk.Paned()
         self.setup_header()
-        self.setup_list()
+        self.setup_sidebar()
+        self.setup_content()
+        self.setup_clipboard_list()
+        self.add(self.paned)
 
     def setup_header(self):
-        headerbar = Gtk.HeaderBar()
-        self.filter_entry = Gtk.Entry(placeholder_text='Filter...', hexpand=True)
-        self.filter_entry.set_icon_from_icon_name(Gtk.EntryIconPosition.PRIMARY, "edit-find-symbolic")
-        self.filter_entry.connect('changed', self.on_filter_changed)
-        headerbar.set_custom_title(self.filter_entry)
-        self.set_titlebar(headerbar)
+        header = Gtk.HeaderBar(title="Clips", show_close_button=True)
+        self.enabled_switch = Gtk.Switch(active=self.application.is_enabled)
+        self.enabled_switch.connect('notify::active', self.on_enabled_toggled)
+        header.pack_start(self.enabled_switch)
 
-    def setup_list(self):
+        clear_button: Gtk.Button = Gtk.Button.new_from_icon_name("edit-clear-all-symbolic", Gtk.IconSize.SMALL_TOOLBAR)
+        clear_button.props.tooltip_text = "Clear the clipboard history"
+        clear_button.connect("clicked", self.on_clear_clipboard)
+        header.pack_end(clear_button)
+
+        self.set_titlebar(header)
+
+    def setup_sidebar(self):
+        listbox = Gtk.ListBox()
+        listbox.set_size_request(200, -1)
+        listbox.add(ClipboardItem(self.clipboard_history))
+        listbox.get_style_context().add_class("sidebar")
+
         scrolled = Gtk.ScrolledWindow()
         scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scrolled.add(listbox)
+        self.paned.pack1(scrolled, False, False)
 
-        self.listbox = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE)
-        self.listbox.set_header_func(self.list_divider_func)
-        self.listbox.connect('row-activated', self.on_row_select)
+    def setup_content(self):
+        self.stack = Gtk.Stack()
+        self.stack.set_size_request(600, 550)
+        self.paned.pack2(self.stack, True, False)
 
-        scrolled.add(self.listbox)
-        self.add(scrolled)
+    def setup_clipboard_list(self):
+        self.history_list = HistoryList(self.clipboard_history)
+        self.stack.add_named(self.history_list.scrolled(), 'clipboard')
 
     # Signal handlers
 
-    def do_show(self):
-        Gtk.Window.do_show(self)
-        self.update_ui()
+    def on_enabled_toggled(self, switch, paramspec):
+        self.application.is_enabled = switch.props.active
 
-    def do_key_release_event(self, event: Gdk.Event):
-        Gtk.Window.do_key_release_event(self, event)
-        if event.keyval == Gdk.KEY_Escape:
-            self.destroy()
-        elif len(event.string) > 0 and not self.filter_entry.props.is_focus:
-            self.filter_entry.set_text(event.string)
-            self.filter_entry.set_position(len(event.string))
-            self.filter_entry.grab_focus_without_selecting()
-
-    def do_focus_out_event(self, event):
-        self.destroy()
-        return Gtk.Window.do_focus_out_event(self, event)
-
-    def on_row_select(self, listbox, row):
-        print('Row selected', row.item)
-        self.destroy()
-        self.clipboard.paste(row.item)
-
-    def on_filter_changed(self, entry):
-        self.filter = entry.props.text
-
-        def filter_func(row):
-            return len(self.filter) == 0 or self.filter in row.item
-
-        self.listbox.set_filter_func(filter_func)
-
-    # Miscellaneous methods
-
-    def update_ui(self):
-        if not self.props.visible:
-            return
-
-        for list_item in self.list_items:
-            self.listbox.remove(list_item)
-        self.list_items = []
-
-        for item in reversed(self.clipboard_history.items):
-            list_item = HistoryItem(item)
-            list_item.show_all()
-            self.listbox.add(list_item)
-            if len(self.list_items) == 0:
-                list_item.grab_focus()
-            self.list_items.append(list_item)
-
-    # Copied from GNOME Tweaks
-    def list_divider_func(self, row, before):
-        if before and not row.get_header():
-            row.set_header(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
+    def on_clear_clipboard(self, buttom):
+        self.clipboard_history.clear()
 
 
-class HistoryItem(Gtk.ListBoxRow):
-    def __init__(self, item):
+class ClipboardItem(Gtk.ListBoxRow):
+    def __init__(self, clipboard_history: ClipboardHistory):
         super().__init__()
-        self.item = item
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        box.add(Gtk.Label(label="Clipboard", margin=8, xalign=0, hexpand=True))
+        self.count_label = Gtk.Label(label=str(len(clipboard_history.items)),
+                                     margin_right=8, valign=Gtk.Align.CENTER)
+        self.count_label.get_style_context().add_class(Gtk.STYLE_CLASS_DIM_LABEL)
+        box.add(self.count_label)
+        self.add(box)
 
-        self.label = Gtk.Label(margin=8, xalign=0, label=item)
-        self.label.set_line_wrap(True)
-        self.add(self.label)
+        clipboard_history.connect("changed", self.on_history_changed)
+
+    def on_history_changed(self, clipboard_history: ClipboardHistory):
+        self.count_label.props.label = str(len(clipboard_history.items))

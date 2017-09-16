@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+    <schema path="/org/gnome/clips/" id="org.gnome.Clips">
+        <key type="b" name="is-enabled">
+            <default>false</default>
+            <summary>Clipboard history and popup enabled</summary>
+            <description>Track clipboard history and enable the popup.</description>
+        </key>
+    </schema>
+</schemalist>

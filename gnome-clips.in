@@ -13,7 +13,6 @@ from gi.repository import Gio
 from gnomeclips.application import Application
 
 
-
 pkgdatadir = '@DATA_DIR@'
 
 # Copied from Lollypop music player
@@ -36,10 +35,10 @@ if __name__ == '__main__':
     # resource = Gio.resource_load(os.path.join(pkgdatadir, 'gnome-clips.gresource'))
     # Gio.Resource._register(resource)
 
-    app = Application('@VERSION@', '@LIB_DIR@')
+    app = Application('@VERSION@', pkgdatadir, '@LIB_DIR@')
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-    app.hold()
+    # app.hold()
 
     status = app.run(sys.argv)
     sys.exit(status)

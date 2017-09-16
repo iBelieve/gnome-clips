@@ -1,5 +1,6 @@
 import subprocess
 from threading import Timer
+
 from gi.repository import Gtk, Gdk, GLib, GObject
 
 
