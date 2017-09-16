@@ -3,11 +3,14 @@ import os
 from gi.repository import GLib, Gtk, Gio
 
 from .history import ClipboardHistory
-from .utils import USER_DATA_DIR, AUTOSTART_DIR, AUTOSTART_FILE
+from .keybindings import Keybindings
+from .popup import HistoryPopup
+from .utils import USER_DATA_DIR, AUTOSTART_DIR, AUTOSTART_FILE, present_window
 from .window import Window
 
 
 class Application(Gtk.Application):
+    popup: HistoryPopup = None
     history: ClipboardHistory = None
 
     def __init__(self, version, pkgdatadir, libdir):
@@ -28,13 +31,28 @@ class Application(Gtk.Application):
         Gtk.Application.do_startup(self)
         if not os.path.exists(USER_DATA_DIR):
             os.mkdir(USER_DATA_DIR)
-        self.update_daemon()
+        if self.is_enabled:
+            self.hold()
         self.history = ClipboardHistory(libdir=self.libdir, enabled=self.is_enabled)
+        self.keybindings = Keybindings()
+        self.update_daemon()
+        self.update_keybindings()
 
     def do_activate(self):
         Gtk.Application.do_activate(self)
         window = Window(self, self.history)
         window.show_all()
+
+    def show_popup(self):
+        if self.popup is not None:
+            return
+        self.popup = HistoryPopup(application=self, clipboard_history=self.history)
+        self.popup.connect('destroy', self.popup_destroyed)
+        self.popup.show_all()
+        present_window(self.popup)
+
+    def popup_destroyed(self, popup):
+        self.popup = None
 
     # Daemon management
 
@@ -44,9 +62,15 @@ class Application(Gtk.Application):
 
     @is_enabled.setter
     def is_enabled(self, enabled):
+        if enabled != self.is_enabled:
+            if enabled:
+                self.hold()
+            else:
+                self.release()
         self.settings.set_boolean('is-enabled', enabled)
         self.history.set_enabled(enabled)
         self.update_daemon()
+        self.update_keybindings()
 
     def update_daemon(self):
         target = os.path.join(AUTOSTART_DIR, AUTOSTART_FILE)
@@ -59,3 +83,9 @@ class Application(Gtk.Application):
         else:
             if os.path.exists(target):
                 os.remove(target)
+
+    def update_keybindings(self):
+        if self.is_enabled:
+            self.keybindings.add('<Ctrl><Shift>V', self.show_popup)
+        else:
+            self.keybindings.remove_all()

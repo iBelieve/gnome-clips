@@ -5,8 +5,8 @@ from .historylist import HistoryList
 
 
 class HistoryPopup(Gtk.Window):
-    def __init__(self, clipboard_history: ClipboardHistory):
-        super().__init__(title='Clips', resizable=False,
+    def __init__(self, application, clipboard_history: ClipboardHistory):
+        super().__init__(application=application, title='Clips', resizable=False,
                          skip_pager_hint=True, skip_taskbar_hint=True)
         self.clipboard = clipboard_history.clipboard
         self.clipboard_history = clipboard_history
@@ -55,4 +55,4 @@ class HistoryPopup(Gtk.Window):
         self.clipboard.paste(row.item)
 
     def on_filter_changed(self, entry):
-        self.listbox.set_filter(entry.props.text)
+        self.list.set_filter(entry.props.text)

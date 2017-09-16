@@ -1,7 +1,6 @@
 from gi.repository import Gtk, Pango
 
 from .history import ClipboardHistory
-from .utils import guess_language
 
 
 class HistoryList(Gtk.ListBox):
@@ -55,8 +54,6 @@ class HistoryItem(Gtk.ListBoxRow):
     def __init__(self, item: str):
         super().__init__()
         self.item = item
-        print(guess_language(item))
-
         self.label = Gtk.Label(margin=8, xalign=0, halign=Gtk.Align.FILL,
                                ellipsize=Pango.EllipsizeMode.END,
                                label=item.replace('\n', ' '))
