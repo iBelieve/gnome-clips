@@ -1,4 +1,0 @@
-[Desktop Entry]
-Type=Application
-Exec=gnome-clips --gapplication-service
-NoDisplay=True

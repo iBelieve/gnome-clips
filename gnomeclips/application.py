@@ -10,6 +10,7 @@ from .window import Window
 
 
 class Application(Gtk.Application):
+    window: Window = None
     popup: HistoryPopup = None
     history: ClipboardHistory = None
 
@@ -19,6 +20,8 @@ class Application(Gtk.Application):
         self.version = version
         self.pkgdatadir = pkgdatadir
         self.libdir = libdir
+
+        Gtk.Settings.get_default().set_property("gtk-application-prefer-dark-theme", True)
 
         self.settings = Gio.Settings(schema_id='org.gnome.Clips')
 
@@ -40,19 +43,24 @@ class Application(Gtk.Application):
 
     def do_activate(self):
         Gtk.Application.do_activate(self)
-        window = Window(self, self.history)
-        window.show_all()
+        if self.window is None:
+            self.window = Window(self, self.history)
+            self.window.connect('destroy', self.on_window_destroyed)
+        self.window.show_all()
 
     def show_popup(self):
         if self.popup is not None:
             return
         self.popup = HistoryPopup(application=self, clipboard_history=self.history)
-        self.popup.connect('destroy', self.popup_destroyed)
+        self.popup.connect('destroy', self.on_popup_destroyed)
         self.popup.show_all()
         present_window(self.popup)
 
-    def popup_destroyed(self, popup):
+    def on_popup_destroyed(self, popup):
         self.popup = None
+
+    def on_window_destroyed(self, window):
+        self.window = None
 
     # Daemon management
 

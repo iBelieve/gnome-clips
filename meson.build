@@ -22,12 +22,14 @@ datadir = join_paths(get_option('prefix'), get_option('datadir'))
 
 python_dir = join_paths(get_option('prefix'), python.sysconfig_path('purelib'))
 pkgdatadir = join_paths(datadir, meson.project_name())
+pkglibdir = join_paths(libdir, meson.project_name())
 schemadir = join_paths(datadir, 'glib-2.0', 'schemas')
 
 conf = configuration_data()
 conf.set('VERSION', meson.project_version())
+conf.set('BIN_DIR', bindir)
 conf.set('DATA_DIR', pkgdatadir)
-conf.set('LIB_DIR', libdir)
+conf.set('LIB_DIR', pkglibdir)
 conf.set('PYTHON', python_bin.path())
 
 subdir('data')
@@ -35,6 +37,6 @@ subdir('data')
 install_subdir('gnomeclips', install_dir: python_dir)
 
 configure_file(input: 'gnome-clips.in', output: 'gnome-clips', configuration: conf, install_dir: bindir)
-configure_file(input: 'gnome-clips-paste.in', output: 'gnome-clips-paste', configuration: conf, install_dir: libdir)
+configure_file(input: 'gnome-clips-paste.in', output: 'gnome-clips-paste', configuration: conf, install_dir: pkglibdir)
 
 meson.add_install_script('meson/meson-postinstall.sh')

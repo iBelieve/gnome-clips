@@ -1,0 +1,4 @@
+[Desktop Entry]
+Type=Application
+Exec=@BIN_DIR@/gnome-clips --gapplication-service
+NoDisplay=True
